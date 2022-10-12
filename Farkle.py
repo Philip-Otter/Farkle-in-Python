@@ -1,242 +1,153 @@
-# A program to play the game Farkel
+# A program to play the dice game 'Farkle'.
 
-name = 'Philip'
-score = 0
-
-
-# Draws our game board
-def draw(one,two,three,four,five,six):
-
-    # Dice art
-    def dice(x):
-        try:
-            if x == 1:
-                print('''
-                 _____________
-                |             |
-                |             |         
-                |      *      |
-                |             |
-                |_____________|
-                ''')
-            elif x == 2:
-                print('''
-                 _____________
-                |             |
-                |  *          |         
-                |             |
-                |          *  |
-                |_____________|
-                ''')
-            elif x == 3:
-                print('''
-                 _____________
-                |             |
-                |  *          |         
-                |      *      |
-                |          *  |
-                |_____________|
-                ''')
-            elif x == 4:
-                print('''
-                 _____________
-                |             |
-                |  *       *  |         
-                |             |
-                |  *       *  |
-                |_____________|
-                ''')
-            elif x == 5:
-                print('''
-                 _____________
-                |             |
-                |  *       *  |         
-                |      *      |
-                |  *       *  |
-                |_____________|
-                ''')
-            elif x == 6:
-                print('''
-                 _____________
-                |             |
-                |  *       *  |         
-                |  *       *  |
-                |  *       *  |
-                |_____________|
-                ''')
-        except:
-            print("Failed to render dice")
-
-    # Prints dice based on number of remaining dice
-    rollVals = {1: one, 2: two, 3: three, 4: four, 5: five, 6: six}  # Utilizes dictionary for tracking the quantity of the roles from func params    
-    diceNum = one+two+three+four+five+six
-    print(diceNum)
-    x=1
-    try:
-        z = 1  # Counter for rollVals
-        while x <= diceNum:
-            y = 1  # Nested loop counter
-            if rollVals[z] != 0:
-                while y <= rollVals[z]:
-                    print(z)
-                    print(y)
-                    print(rollVals[z])
-                    dice(z)
-                    y = y+1
-                x = x+1
-                z = z+1
-            else:
-                if x == diceNum:
-                    z = z+1
-                else:
-                    x=x+1
-    except:
-        print('Failed to render proper dice values')
-
-    print('|  ', name, '  |   Dice #:  ', diceNum, '  |  Score:  ', score, '  |')
+import time
+import numpy as np
 
 
-# Takes care of formatting and listing scoring options for our users based on the dirty list with overlapping scores.
-def scoring(dirtyList = []):  # The dirty list is an unfiltered list put together in rules()
-    cleanList = []  # list with the users real scoring options (remove duplicate and useless information)
-    try:
-        for x in dirtyList:
-            if x == 'straight':
-                cleanList = []  # Removing stupid choice of not picking the straight i.e. 1 or 5.
-                cleanList.append('Straight:  1500pts')
-    except:
-        print('Failed to parse "dirty list" to clean score list')
+def refresh():
+    # Reset the game header.
+    print("\033c")
+    print('''                         ______         _    _      
+                        |  ____|       | |  | |     
+                        | |__ __ _ _ __| | _| | ___ 
+                        |  __/ _` | '__| |/ / |/ _ \\
+                        | | | (_| | |  |   <| |  __/
+                        |_|  \__,_|_|  |_|\_\_|\___|
+                     ──────────────────────────────────\n''')
 
 
-# Checks what scoring options are available
-def rules(dice = []):
-
-    scoreOptions = []
-
-    one = 0
-    two = 0
-    three = 0
-    four = 0
-    five = 0
-    six = 0
-
-    try:  # Responsible for sorting dice distribution.
-        for x in dice:
-            if x == 1:
-                one = one+1
-            elif x == 2:
-                two = two+1    
-            elif x == 3:
-                three = three+1            
-            elif x == 4:
-                four = four+1
-            elif x == 5:
-                five = five+1
-            elif x == 6:
-                six = six+1
-    except:
-        print('Failed to organize dice')
+def roll_dice(num_dice):
+    # Generate a dice roll result for a given number of dice.
+    roll = list(np.sort(np.random.randint(1, 7, num_dice)))
+    return roll
 
 
-    # Checks for pairs
-    def matchesCheck(one,two,three,four,five,six):
-        doubleNums = 0
-        rollVals = {1: one, 2: two, 3: three, 4: four, 5: five, 6: six}  # Utilizes dictionary for tracking the quantity of the roles from func params
-        removableDice = []  # list to keep track of our scoring dice values
+def print_dice(roll):
+    # Illustrate a given dice roll and list the results.
+    die_top    = "┌─────────┐  "
+    die_blank  = "│         │  "
+    die_left   = "│  ●      │  "
+    die_center = "│    ●    │  "
+    die_right  = "│      ●  │  "
+    die_double = "│  ●   ●  │  "
+    die_bottom = "└─────────┘  "
 
-        print(rollVals)  # Testing only
+    print(die_top * len(roll))
+    for i in range(1, 7):        # Print top third of each die based on each value.
+        num = roll.count(i)
+        if   i == 1:
+            print(die_blank * num, end="")
+        elif i == 2 or i == 3:
+            print(die_right * num, end="")
+        else:
+            print(die_double * num, end="")
+    print()
+    
+    for i in range(1, 7):        # Print center third of each die based on each value.
+        num = roll.count(i)
+        if   i == 1 or i == 3 or i == 5:
+            print(die_center * num, end="")
+        elif i == 2 or i == 4:
+            print(die_blank * num, end="")
+        else:
+            print(die_double * num, end="")
+    print()
+    
+    for i in range(1, 7):        # Print bottom third of each die based on each value.
+        num = roll.count(i)
+        if   i == 1:
+            print(die_blank * num, end="")
+        elif i == 2 or i == 3:
+            print(die_left * num, end="")
+        else:
+            print(die_double * num, end="")            
+    print()
+    print(die_bottom * len(roll))
 
-        try:
-            x = 1
-
-            while x <= 6:
-                val = rollVals[x]
-                if val == 6:  # 6 of a kind:  3000pts
-                    removableDice.append('6 dice of value:  ')
-                    removableDice.append(x)
-                    break
-                elif val == 5: # 5 of a kind:  2000pts
-                    removableDice.append('5 dice of value:  ')
-                    removableDice.append(x)
-                    break         
-                elif val == 4:
-                    doubleNums = doubleNums+2
-                    removableDice.append('4 dice of value:  ')
-                    removableDice.append(x)
-                    x = x+1
-                elif val < 4 and val > 0:
-                    try:
-                        if val == 3:
-                            doubleNums = doubleNums+1
-                            removableDice.append('2 dice of value:  ')
-                            removableDice.append(x)
-                            removableDice.append('3 dice of value:  ')
-                            removableDice.append(x)                                                 
-                            x=x+1
-                        elif val == 2:
-                            doubleNums = doubleNums+1
-                            removableDice.append('2 dice of value:  ')
-                            removableDice.append(x)                    
-                            x=x+1
-                        else:  # '1' case
-                            x=x+1
-                    except:
-                        print("Failed to evaluate dice matches below a quantity of 4")
-                else:  # '0' case
-                    x=x+1
-            return removableDice
-
-        except:
-            print('Failed to evaluate matches')
+    str_roll = [str(x) for x in roll]
+    print(f"Roll Result: {', '.join(str_roll)}")
 
 
-    # Checks for singles (that matter)
-    def singlesCheck(one,two,three,four,five,six, removableDice):
-        rollVals = {1: one, 2: two, 3: three, 4: four, 5: five, 6: six}  # Utilizes dictionary for tracking the quantity of the roles from func params
+def list_melds(roll):
+    # Analyze a given roll result for possible melds.
+    
+    roll_dist = []
+    valid_melds = []
 
-        try:
-            if rollVals[1] > 0:  # 100pts each
-                removableDice.append(rollVals[1])
-                removableDice.append(" dice of value:  1")
-            
-            if rollVals[5] > 0:  # 50pts each
-                removableDice.append(rollVals[5])
-                removableDice.append(" dice of value:  5")             
-        except:
-            print('Failed to evaluate single dice values')
-        
-        return removableDice
+    for i in range(1, 7):
+        # Create a distribution of the dice roll.
+        roll_dist.append(roll.count(i))
 
-    # Checks for a straight
-    def straightCheck(one,two,three,four,five,six, removableDice):
-        try:
-            if one == 1:
-                if two == 1:
-                    if three == 1:
-                        if four == 1:
-                            if five == 1:
-                                if six == 1:
-                                    removableDice.append('Straight')
-        except:
-            print('Failed to check for straight')
-        
-        return removableDice
+    if roll_dist.count(6) == 1:         # Six of a Kind (3000 pts.)
+        valid_melds.append("Six of a Kind")
 
-    scoreOptions=matchesCheck(one,two,three,four,five,six)
-    scoreOptions=singlesCheck(one,two,three,four,five,six, scoreOptions)
-    scoreOptions=straightCheck(one,two,three,four,five,six, scoreOptions)
-    draw(one,two,three,four,five,six)
-    print(scoreOptions)
-    print(one, two, three, four, five, six)
-    scoring(scoreOptions)
+    if roll_dist.count(3) == 2:         # Two Triplets (2500 pts.)
+        valid_melds.append("Two Triplets")
+
+    if roll_dist.count(5) == 1:         # Five of a Kind (2000 pts.)
+        valid_melds.append("Five of a Kind")
+
+    if roll_dist.count(1) == 6:         # 1-6 Straight (1500 pts.)
+        valid_melds.append("1-6 Straight")
+
+    if roll_dist.count(2) == 3:         # Three Pairs (1500 pts.)
+        valid_melds.append("Three Pairs")
+
+    if roll_dist.count(4) == 1:
+        if roll_dist.count(2) == 1:     # Four of a Kind with a Pair (1500 pts.)
+            valid_melds.append("Four of a Kind with Pair")
+            valid_melds.append("Four of a Kind")
+        else:       # Four of a Kind (1000 pts.)
+            valid_melds.append("Four of a Kind")
+
+    if roll_dist.count(3) == 1:         # Three of a Kind (points vary)
+        valid_melds.append("Three of a Kind")
+
+    if roll_dist[0] != 0:       # Ones (100 pts. each)
+        valid_melds.append(f"{roll_dist[0]} One" if roll_dist[0] == 1 else f"{roll_dist[0]} Ones")
+
+    if roll_dist[4] != 0:       # Fives (50 pts. each)
+        valid_melds.append(f"{roll_dist[4]} Five" if roll_dist[4] == 1 else f"{roll_dist[4]} Fives")
+    
+    return valid_melds
 
 
 def main():
-    #dice = [3,2,1,4,5,6]
-    #dice = [1,1,1,1,1,1]
-    #dice = [2,2,2,3,3,3]
-    dice = [1,0,2,0,1,0]
-    rules(dice)
-
+    #@TODO - Clean up and comment main and create player turn function.
+    refresh()
+    # Player starts their turn by throwing all six dice.
+    # Generate player's first dice throw
+    pl_roll = roll_dice(6)
+    time.sleep(1)
+    print("With a vigorous shake, you roll the dice across the table.\n")
+    time.sleep(1)
+    refresh()
+    print_dice(pl_roll)
+    pl_melds = list_melds(pl_roll)
+    if len(pl_melds) == 0:
+        print("FARKLE! All points gained this round are lost, and your turn is over.\n")
+    elif len(pl_melds) == 1:
+        print(f"\nYour only possible meld is: {'; '.join(pl_melds)}\n")
+    else:
+        print(f"\nYour highest possible melds are: {'; '.join(pl_melds)}\n")
+    while True:
+        meld_choice = input("Enter the dice values you would like to meld (1, 2, 3, etc.): ")
+        meld_choice = meld_choice.split(", ")
+        meld_choice = [int(x) for x in meld_choice]
+        choice_melds = list_melds(meld_choice)
+        if len(choice_melds) > 0 and choice_melds[0] in pl_melds:
+            print(choice_melds[0])
+            break
+        refresh()
+        print_dice(pl_roll)
+        if len(pl_melds) == 0:
+            print("FARKLE! All points gained this round are lost, and your turn is over.")
+        elif len(pl_melds) == 1:
+            print(f"\nYour only possible meld is: {'; '.join(pl_melds)}")
+        else:
+            print(f"\nYour highest possible melds are: {'; '.join(pl_melds)}")
+        #@TODO - Actual input validation.
+        print("\nERROR: Entered values do not meld.")
+        
 
 main()
