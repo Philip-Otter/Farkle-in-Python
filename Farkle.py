@@ -2,6 +2,7 @@
 
 import time
 import numpy as np
+from logging import exception
 
 
 # Reset the game header.
@@ -66,45 +67,49 @@ def print_dice(roll):
     print(f"Roll Result: {', '.join([str(x) for x in roll])}")
 
 
-# Analyze a given roll result for possible melds.
+# Analyze a given roll result for possible melds and return meld type information.
 def list_melds(roll):    
     roll_dist = []
-    valid_melds = []
+    valid_melds = {}
 
     for i in range(1, 7):
         # Create a distribution of the dice roll.
         roll_dist.append(roll.count(i))
 
     if roll_dist.count(6) == 1:         # Six of a Kind (3000 pts.)
-        valid_melds.append("Six of a Kind")
+        valid_melds["6OAK"] = {"desc": "Six of a Kind", "points": 3000, "dice": 6}
 
     if roll_dist.count(3) == 2:         # Two Triplets (2500 pts.)
-        valid_melds.append("Two Triplets")
+        valid_melds["2TRIP"] = {"desc": "Two Triplets", "points": 2500, "dice": 6}
 
     if roll_dist.count(5) == 1:         # Five of a Kind (2000 pts.)
-        valid_melds.append("Five of a Kind")
+        meld_type = roll_dist.index(5) + 1
+        valid_melds["5OAK"] = {"desc": "Five of a Kind", "points": 2000, "dice": 5, "type": meld_type}
 
     if roll_dist.count(1) == 6:         # 1-6 Straight (1500 pts.)
-        valid_melds.append("1-6 Straight")
+        valid_melds["1-6ST"] = {"desc": "1-6 Straight", "points": 1500, "dice": 6}
 
     if roll_dist.count(2) == 3:         # Three Pairs (1500 pts.)
-        valid_melds.append("Three Pairs")
+        valid_melds["3PAIR"] = {"desc": "Three Pairs", "points": 1500, "dice": 6}
 
-    if roll_dist.count(4) == 1:
+    if roll_dist.count(4) == 1:         # Four of a Kind (1000 pts.)
         if roll_dist.count(2) == 1:     # Four of a Kind with a Pair (1500 pts.)
-            valid_melds.append("Four of a Kind with Pair")
-            valid_melds.append("Four of a Kind")
-        else:       # Four of a Kind (1000 pts.)
-            valid_melds.append("Four of a Kind")
+            valid_melds["4OAKP"] = {"desc": "Four of a Kind with a Pair", "points": 1500, "dice": 6}
+
+        meld_type = roll_dist.index(4) + 1
+        valid_melds["4OAK"] = {"desc": "Four of a Kind", "points": 1000, "dice": 4, "type": meld_type}
 
     if roll_dist.count(3) == 1:         # Three of a Kind (points vary)
-        valid_melds.append("Three of a Kind")
+        meld_type = roll_dist.index(3) + 1
+        valid_melds["1TRIP"] = {"desc": f"Triplet of {meld_type}'s", "points": 300 if meld_type == 1 else (meld_type) * 100, "dice": 3, "type": meld_type}
 
     if roll_dist[0] != 0:       # Ones (100 pts. each)
-        valid_melds.append(f"{roll_dist[0]} One" if roll_dist[0] == 1 else f"{roll_dist[0]} Ones")
+        num_ones = roll_dist[0]
+        valid_melds["ONES"] = {"desc": f"{num_ones} One" if num_ones == 1 else f"{num_ones} Ones", "points": num_ones * 100, "dice": num_ones, "type": 1}
 
     if roll_dist[4] != 0:       # Fives (50 pts. each)
-        valid_melds.append(f"{roll_dist[4]} Five" if roll_dist[4] == 1 else f"{roll_dist[4]} Fives")
+        num_fives = roll_dist[4]
+        valid_melds["FIVES"] = {"desc": f"{num_fives} Five" if num_fives == 1 else f"{num_fives} Fives", "points": num_fives * 50, "dice": num_fives, "type": 5}
     
     return valid_melds
 
@@ -136,38 +141,78 @@ def main():
         i = 0
         while i < 9001:
             print_dice(pl_roll)
-            
+            pl_meld_list = list(pl_melds.values())
+
             if len(pl_melds) == 1:
-                print(f"\nYour only possible meld is: {'; '.join(pl_melds)}\n")
+                print(f"\nYour only possible meld is: {pl_meld_list[0]['desc']}\n")
             else:
-                print(f"\nYour highest possible melds are: {'; '.join(pl_melds)}\n")
+                # List best possible melds from roll result.
+                pl_meld_desc = [pl_meld_list[x]['desc'] for x in range(len(pl_meld_list))]
+                print(f"\nYour highest possible melds are: {'; '.join(pl_meld_desc)}\n")
             
-            if i > 0:
+            if i == 1:
+                print("ERROR: Please enter numbers separated by commas. (1, 1, 5, etc.)", end="")
+            
+            if i == 2:
                 print("ERROR: Entered values do not meld. Try again.", end="")
 
-            meld_choice = input("\nEnter the dice values you would like to meld (x, y, z, etc.): ")
-            meld_choice = meld_choice.split(", ")
+            if i == 3:
+                print("ERROR: One or more entered values do not meld. Try again.", end="")
+
+            chosen_melds = input("\nEnter the dice values you would like to meld: ")
+            chosen_melds = chosen_melds.split(", ")
 
             try:
-                int_choice = [int(x) for x in meld_choice]
-                # Analyze the entered values for valid melds.
-                choice_melds = list_melds(int_choice)
-
-                # If chosen meld does not match any valid meld from the roll, redo input.
-                if len(choice_melds) > 0 and choice_melds[0] in pl_melds:
-                    break
-                # If entered meld(s) are 1s or 5s, just make sure they don't input more than they rolled.
-                elif (1 in pl_roll and 1 in int_choice) or (5 in pl_roll and 5 in int_choice):
-                    if (int_choice.count(1) <= pl_roll.count(1)) and (int_choice.count(5) <= pl_roll.count(5)):
-                        break
-                raise ValueError
-
-            # If no valid melds found from user input, try again and display error message.
-            except ValueError:
+                # Convert user input to an integer list.
+                list_chosen_melds = [int(x) for x in chosen_melds]
+            
+            except:
+                # Error 1: User did not input a comma-separated list of integers.
                 refresh()
                 i = 1
+                continue
+            
+            try:
+                # Analyze the entered values for valid melds.
+                chosen_melds = list_melds(list_chosen_melds)
+                chosen_melds = list(chosen_melds.values())
+
+            except:
+                # Error 2: Failed to create meld list from user input.
+                refresh()
+                i = 2
+                continue
+
+            roll_score = 0
+            try:
+                while len(chosen_melds) > 0:
+                    if chosen_melds[0] not in pl_meld_list:
+                        if chosen_melds[0]["type"] != 1 and chosen_melds[0]["type"] != 5:
+                            raise exception
+                        elif chosen_melds[0]["type"] == 1 and chosen_melds[0]["dice"] > pl_roll.count(1):
+                            raise exception
+                        elif chosen_melds[0]["type"] == 5 and chosen_melds[0]["dice"] > pl_roll.count(5):
+                            raise exception
+                    
+                    roll_score += chosen_melds[0]["points"]
+                    if chosen_melds[0]["dice"] == len(list_chosen_melds):
+                        list_chosen_melds = []
+                    else:
+                        for _ in range(chosen_melds[0]["dice"]):
+                            list_chosen_melds.remove(chosen_melds[0]["type"])
+
+                    chosen_melds = list_melds(list_chosen_melds)
+                    chosen_melds = list(chosen_melds.values())
+
+                break
+            
+            except:
+                # Error 3: One or more numbers from user input do not meld.
+                refresh()
+                i = 3
+                continue
     
-    print(choice_melds)
+    print(f"Roll Score: {roll_score}")
         
 
 main()
