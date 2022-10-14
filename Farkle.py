@@ -1,13 +1,19 @@
 # A program to play the dice game 'Farkle'.
 
+import os
 import time
 import numpy as np
 from logging import exception
 
 
+# Print the current score.
+def scoreboard(name, score1, score2):
+    print(f"\t\t{name}'s Score: {score1}\t\tComputer's Score: {score2}\n")
+
+
 # Reset the game header.
 def refresh():
-    print("\033c")
+    os.system('cls' if os.name=='nt' else 'clear')
     print('''                         ______         _    _      
                         |  ____|       | |  | |     
                         | |__ __ _ _ __| | _| | ___ 
@@ -114,41 +120,29 @@ def list_melds(roll):
     return valid_melds
 
 
-def main():
-    #@TODO - Create player turn function.
-    refresh()
-    time.sleep(1)
-
-    # Begin Player Turn
-    print("It is your turn!")
-    input("Press Enter to roll.")
-    refresh()
-
-    print("With a vigorous shake, you roll the dice across the table.")
-    time.sleep(2)
-    refresh()
-    
-    # Generate new roll with six dice, and analyze it for valid melds.
-    pl_roll = roll_dice(6)
-    pl_melds = list_melds(pl_roll)
-
-    if len(pl_melds) == 0:
+# Let the player decide which dice to meld (set aside) from a given roll.
+def handle_meld_choice(roll):
+    melds = list_melds(roll)
+    if len(melds) == 0:
         # If no valid melds, FARKLE!
-        print_dice(pl_roll)
+        print_dice(roll)
         print("\nFARKLE! All points gained this round are lost, and your turn is over.\n")
+        time.sleep(2)
+        input("Press Enter to continue.")
+        return (roll_score := 0), (remaining_dice := -1)
     else:
         # Meld choice input validation loop.
         i = 0
         while i < 9001:
-            print_dice(pl_roll)
-            pl_meld_list = list(pl_melds.values())
+            print_dice(roll)
+            meld_list = list(melds.values())
 
-            if len(pl_melds) == 1:
-                print(f"\nYour only possible meld is: {pl_meld_list[0]['desc']}\n")
+            if len(melds) == 1:
+                print(f"\nYour only possible meld is: {meld_list[0]['desc']}\n")
             else:
                 # List best possible melds from roll result.
-                pl_meld_desc = [pl_meld_list[x]['desc'] for x in range(len(pl_meld_list))]
-                print(f"\nYour highest possible melds are: {'; '.join(pl_meld_desc)}\n")
+                meld_names = [meld_list[x]['desc'] for x in range(len(meld_list))]
+                print(f"\nYour highest possible melds are: {'; '.join(meld_names)}\n")
             
             if i == 1:
                 print("ERROR: Please enter numbers separated by commas. (1, 1, 5, etc.)", end="")
@@ -174,8 +168,10 @@ def main():
             
             try:
                 # Analyze the entered values for valid melds.
-                chosen_melds = list_melds(list_chosen_melds)
+                chosen_melds = list_melds(list_chosen_melds.copy())
                 chosen_melds = list(chosen_melds.values())
+                if len(chosen_melds) < 1:
+                    raise exception
 
             except:
                 # Error 2: Failed to create meld list from user input.
@@ -184,35 +180,223 @@ def main():
                 continue
 
             roll_score = 0
-            try:
+            remaining_melds = list_chosen_melds.copy()
+            try:    
                 while len(chosen_melds) > 0:
-                    if chosen_melds[0] not in pl_meld_list:
+                    if chosen_melds[0] not in meld_list:
                         if chosen_melds[0]["type"] != 1 and chosen_melds[0]["type"] != 5:
                             raise exception
-                        elif chosen_melds[0]["type"] == 1 and chosen_melds[0]["dice"] > pl_roll.count(1):
+                        elif chosen_melds[0]["type"] == 1 and chosen_melds[0]["dice"] > roll.count(1):
                             raise exception
-                        elif chosen_melds[0]["type"] == 5 and chosen_melds[0]["dice"] > pl_roll.count(5):
+                        elif chosen_melds[0]["type"] == 5 and chosen_melds[0]["dice"] > roll.count(5):
                             raise exception
                     
                     roll_score += chosen_melds[0]["points"]
-                    if chosen_melds[0]["dice"] == len(list_chosen_melds):
-                        list_chosen_melds = []
+                    
+                    if chosen_melds[0]["dice"] == len(remaining_melds):
+                        remaining_melds = []
                     else:
                         for _ in range(chosen_melds[0]["dice"]):
-                            list_chosen_melds.remove(chosen_melds[0]["type"])
+                            remaining_melds.remove(chosen_melds[0]["type"])
 
-                    chosen_melds = list_melds(list_chosen_melds)
+                    chosen_melds = list_melds(remaining_melds)
                     chosen_melds = list(chosen_melds.values())
 
-                break
+                remaining_dice = len(roll) - len(list_chosen_melds)
+                return roll_score, remaining_dice
             
             except:
                 # Error 3: One or more numbers from user input do not meld.
                 refresh()
                 i = 3
                 continue
-    
-    print(f"Roll Score: {roll_score}")
+
+
+# Run through the player's turn and return their updated score.
+def player_turn():
+    # Begin Player Turn
+    roll_count = 1
+    turn_score = 0
+    pl_roll = roll_dice(6)
+    while True:
+        refresh()
+        time.sleep(1)
+        input(f"Press Enter to roll. (Roll #{roll_count})")
+        refresh()
+
+        print("With a vigorous shake, you roll the dice across the table.")
+        time.sleep(2)
+        refresh()
         
+        # Generate new roll with six dice, and analyze it for valid melds.
+        roll_score, remaining_dice = handle_meld_choice(pl_roll)
+        turn_score += roll_score
+        refresh()
+        if remaining_dice == -1:
+            turn_score = 0
+            pl_choice = 'n'
+        else:
+            i = 0
+            while i < 9001:
+                print(f"Points accumulated this turn: {turn_score}\n")
+                print("You can end your turn and bank these points, or continue rolling the remaining dice for the chance to gain more!\n")
+                if i == 1:
+                    print("ERROR: Enter 'y' to roll again, or 'n' to end your turn.", end="")
+                if remaining_dice == 0:
+                    remaining_dice = 6
+                    pl_choice = input(f"\nHot Dice! You gain six dice back. Do you want to roll again? (y/n): ").lower()
+                else:
+                    pl_choice = input(f"\nYou have {remaining_dice} remaining dice. Do you want to roll again? (y/n): ").lower()
+                if pl_choice != 'y' and pl_choice != 'n':
+                    refresh()
+                    i = 1
+                    continue
+                break
+
+        if pl_choice == 'y':
+            pl_roll = roll_dice(remaining_dice)
+            roll_count += 1
+            continue
+        else:
+            refresh()
+            print(f"Your turn is over, and you have banked {turn_score} points. Press Enter to continue.")
+            return turn_score
+
+
+# CPU meld choice AI.
+def cpu_meld_choice(roll):
+    melds = list_melds(roll)
+    if len(melds) == 0:
+        # If no valid melds, FARKLE!
+        print_dice(roll)
+        print("\nThe Computer FARKLED! It loses all points gained this round, and its turn is over.\n")
+        time.sleep(2)
+        input("Press Enter to continue.")
+        return (roll_score := 0), (remaining_dice := -1)
+    else:
+        print_dice(roll)
+        meld_list = list(melds.values())
+        time.sleep(1)
+
+        if len(melds) == 1:
+            print(f"\nThe Computer's only possible meld is: {meld_list[0]['desc']}\n")
+        else:
+            # List best possible melds from roll result.
+            meld_names = [meld_list[x]['desc'] for x in range(len(meld_list))]
+            print(f"\nThe Computer's highest possible melds are: {'; '.join(meld_names)}\n")
+        time.sleep(1)
+
+        if meld_list[0]["dice"] == 6:
+            chosen_melds = roll
+        else:
+            chosen_melds = [meld_list[0]["type"] for _ in range(meld_list[0]["dice"])]
+
+        chosen_melds = list_melds(chosen_melds)
+        chosen_melds = list(chosen_melds.values())
+
+        print(f"The Computer has chosen to meld {chosen_melds[0]['desc']}.")
+        time.sleep(2)
+
+        roll_score = 0
+        remaining_melds = chosen_melds.copy()
+
+        while len(chosen_melds) > 0:
+            if chosen_melds[0] not in meld_list:
+                if chosen_melds[0]["type"] != 1 and chosen_melds[0]["type"] != 5:
+                    raise exception
+                elif chosen_melds[0]["type"] == 1 and chosen_melds[0]["dice"] > roll.count(1):
+                    raise exception
+                elif chosen_melds[0]["type"] == 5 and chosen_melds[0]["dice"] > roll.count(5):
+                    raise exception
+            
+            roll_score += chosen_melds[0]["points"]
+            
+            if chosen_melds[0]["dice"] == len(remaining_melds):
+                remaining_melds = []
+            else:
+                remaining_melds = []
+
+            chosen_melds = list_melds(remaining_melds)
+            chosen_melds = list(chosen_melds.values())
+
+        remaining_dice = len(roll) - meld_list[0]["dice"]
+        return roll_score, remaining_dice
+
+
+# Run through The Computer's turn and return its updated score.
+def computer_turn():
+    # Begin Computer Turn
+    turn_score = 0
+    cpu_roll = roll_dice(6)
+    while True:
+        refresh()
+        time.sleep(1)
+        print("The Computer pulls fresh entropy from the OS, and rolls the dice.")
+        time.sleep(2)
+        refresh()
+        
+        # Generate new roll with six dice, and analyze it for valid melds.
+        roll_score, remaining_dice = cpu_meld_choice(cpu_roll)
+        turn_score += roll_score
+        refresh()
+        if remaining_dice == -1:
+            turn_score = 0
+            cpu_choice = 0
+        else:
+            print(f"Points accumulated by The Computer this turn: {turn_score}\n")
+            time.sleep(1)
+            if remaining_dice == 0:
+                remaining_dice = 6
+                print(f"Hot Dice! The Computer gains six dice back. It will definitely roll again. :)")
+                cpu_choice = 1
+            elif remaining_dice > 2 and turn_score < 500:
+                print(f"The Computer has {remaining_dice} remaining dice. It will roll again.")
+                cpu_choice = 1
+            else:
+                print(f"The Computer has {remaining_dice} remaining dice. It will play it safe and bank its points.")
+                cpu_choice = 0
+            time.sleep(2)
+
+        if cpu_choice == 1:
+            cpu_roll = roll_dice(remaining_dice)
+            continue
+        else:
+            refresh()
+            input(f"The Computer's turn is over, and it has banked {turn_score} points. Press Enter to continue.")
+            return turn_score
+
+
+def main():
+    refresh()
+    pl_name = input("Welcome to Farkle! Please enter your name: ")
+    pl_name = "Player" if pl_name == "" else pl_name
+    pl_score, cpu_score = 0, 0
+
+    while True:
+        # Begin Player Turn
+        refresh()
+        scoreboard(pl_name, pl_score, cpu_score)
+        input("It is your turn! Press Enter to continue.")
+        pl_score += player_turn()
+
+        # Begin Computer Turn
+        refresh()
+        scoreboard(pl_name, pl_score, cpu_score)
+        input("It is the Computer's turn! Press Enter to continue.")
+        cpu_score += computer_turn()
+
+        if pl_score < 10000 and cpu_score < 10000:
+            continue
+        elif pl_score >= 10000:
+            refresh()
+            scoreboard(pl_name, pl_score, cpu_score)
+            print("YOU WON!!! Thank you for playing Farkle. :)")
+            break
+        elif cpu_score >= 10000:
+            refresh()
+            scoreboard(pl_name, pl_score, cpu_score)
+            print("...you lost. Thanks for playing though I guess. :/")
+            break
+            
 
 main()
