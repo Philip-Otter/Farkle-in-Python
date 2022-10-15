@@ -1,2 +1,4 @@
 #Virtual Environment
 DiceGame/
+freeze help
+__pycache__

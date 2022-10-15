@@ -1,5 +1,6 @@
 # A program to play the dice game 'Farkle'.
 
+from ctypes import alignment
 import os
 import time
 import numpy as np
