@@ -7,8 +7,10 @@ jobs:
       - uses: actions/checkout@main
       - name: Requirements Generation
         id: requirements
-      with:
-        PROJECT_NAME: DiceGame
-        PROJECT_PATH: /
-        REQUIREMENT_PATH: /requirement.txt
+        
+        uses: ryan-rozario/pipreqs-action-cpy@master
+        with:
+          PROJECT_NAME: DiceGame
+          PROJECT_PATH: /
+          REQUIREMENT_PATH: /requirement.txt
         
