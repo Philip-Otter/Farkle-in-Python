@@ -1,0 +1,16 @@
+name: Requirements File Generator
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - name: Requirements Generation
+        id: requirements
+        
+        uses: ryan-rozario/pipreqs-action-cpy@master
+        with:
+          PROJECT_NAME: DiceGame
+          PROJECT_PATH: /Farkle.py
+          REQUIREMENT_PATH: /requirement.txt
+        
