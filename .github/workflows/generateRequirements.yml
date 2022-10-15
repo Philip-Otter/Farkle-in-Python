@@ -11,6 +11,6 @@ jobs:
         uses: ryan-rozario/pipreqs-action-cpy@master
         with:
           PROJECT_NAME: DiceGame
-          PROJECT_PATH: /
+          PROJECT_PATH: /Farkle.py
           REQUIREMENT_PATH: /requirement.txt
         
